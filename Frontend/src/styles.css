@@ -85,3 +85,6 @@ td.vacio { text-align: center; color: var(--suave); padding: 24px; }
 .tarjeta-dato .etiqueta { font-size: 0.8rem; color: var(--suave); }
 
 .panel { background: #fff; border: 1px solid var(--borde); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+
+.rejilla-graficas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.panel h3 { margin: 0 0 12px; font-size: 1rem; }

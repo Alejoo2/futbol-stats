@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import Listado from './Listado'
+import Estadisticas from './Estadisticas'
 
 // Cada fase siguiente añade una pestaña aquí.
 const PESTANAS = [
   ['listado', 'Partidos'],
+  ['estadisticas', 'Estadísticas']
 ]
 
 export default function App() {
@@ -30,6 +32,7 @@ export default function App() {
 
       <main>
         {pestana === 'listado' && <Listado />}
+        {pestana === 'estadisticas' && <Estadisticas/>}
       </main>
     </>
   )
