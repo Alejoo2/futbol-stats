@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import Listado from './Listado'
+import Acerca from './Acerca'
 import Estadisticas from './Estadisticas'
+import Listado from './Listado'
 import Posiciones from './Posiciones'
+import { PROYECTO } from './proyecto'
 
-// Cada fase siguiente añade una pestaña aquí.
 const PESTANAS = [
   ['listado', 'Partidos'],
   ['estadisticas', 'Estadísticas'],
   ['posiciones', 'Tabla de posiciones'],
+  ['acerca', 'Acerca del proyecto'],
 ]
 
 export default function App() {
@@ -36,7 +38,12 @@ export default function App() {
         {pestana === 'listado' && <Listado />}
         {pestana === 'estadisticas' && <Estadisticas />}
         {pestana === 'posiciones' && <Posiciones />}
+        {pestana === 'acerca' && <Acerca />}
       </main>
+
+      <footer className="pie">
+        Proyecto de <strong>{PROYECTO.autor}</strong> · {PROYECTO.taller}
+      </footer>
     </>
   )
 }
