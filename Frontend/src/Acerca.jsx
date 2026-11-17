@@ -5,7 +5,7 @@ export default function Acerca() {
 
   return (
     <section>
-      <h2>Acerca del proyecto</h2>
+      <h2>ℹ️Acerca del proyecto</h2>
 
       <div className="panel">
         <h3>Autor</h3>
