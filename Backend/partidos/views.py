@@ -1,5 +1,5 @@
 from django.contrib.auth import authenticate
-from django.db.models import Avg, Count, F, FloatField, Max, Min, Q, Sum
+from django.db.models import Avg, Case, Count, F, FloatField, IntegerField, Max, Min, Q, Sum, When
 from rest_framework import filters, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
@@ -164,3 +164,72 @@ class DepurarView(APIView):
 
         eliminados, _ = filtrar_partidos(Partido.objects.all(), filtros).delete()
         return Response({'eliminados': eliminados, 'filtros': filtros})
+
+CAMPOS_TABLA = ('pj', 'pg', 'pe', 'pp', 'gf', 'gc', 'pts')
+
+
+def _lado(partidos, equipo, gf, gc, gana, pierde):
+    """Una fila por equipo, calculada por PostgreSQL, mirando un solo lado (local o visitante)."""
+    return (
+        partidos.values(equipo)
+        .annotate(
+            pj=Count('id'),
+            pg=Count('id', filter=Q(resultado=gana)),
+            pe=Count('id', filter=Q(resultado='D')),
+            pp=Count('id', filter=Q(resultado=pierde)),
+            gf=Sum(gf),
+            gc=Sum(gc),
+            pts=Sum(Case(
+                When(resultado=gana, then=3),
+                When(resultado='D', then=1),
+                default=0,
+                output_field=IntegerField(),
+            )),
+        )
+        .order_by()
+    )
+
+
+class TablaPosicionesView(APIView):
+    """GET /api/posiciones/?liga=E0&temporada=2023-24[&fecha_hasta=2024-01-31]"""
+
+    def get(self, request):
+        liga = request.query_params.get('liga')
+        temporada = request.query_params.get('temporada')
+        if liga not in LIGAS or not temporada:
+            return Response(
+                {'detalle': 'Envía liga y temporada. Ej: ?liga=E0&temporada=2023-24'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        params = {'liga': liga, 'temporada': temporada}
+        if request.query_params.get('fecha_hasta'):
+            params['fecha_hasta'] = request.query_params['fecha_hasta']
+        partidos = filtrar_partidos(Partido.objects.all(), params)
+
+        como_local = _lado(partidos, 'equipo_local', 'goles_local', 'goles_visitante', 'H', 'A')
+        como_visitante = _lado(partidos, 'equipo_visitante', 'goles_visitante', 'goles_local', 'A', 'H')
+
+        # Une los dos resultados ya agregados (unas 20 filas por lado, no partidos sueltos).
+        tabla = {}
+        for lado, clave in ((como_local, 'equipo_local'), (como_visitante, 'equipo_visitante')):
+            for fila in lado:
+                equipo = fila[clave]
+                acumulado = tabla.setdefault(equipo, {'equipo': equipo, **dict.fromkeys(CAMPOS_TABLA, 0)})
+                for campo in CAMPOS_TABLA:
+                    acumulado[campo] += fila[campo]
+
+        filas = list(tabla.values())
+        for fila in filas:
+            fila['dg'] = fila['gf'] - fila['gc']
+        filas.sort(key=lambda f: (-f['pts'], -f['dg'], -f['gf'], f['equipo']))
+        for posicion, fila in enumerate(filas, start=1):
+            fila['posicion'] = posicion
+
+        return Response({
+            'liga': liga,
+            'liga_nombre': LIGAS[liga],
+            'temporada': temporada,
+            'fecha_hasta': params.get('fecha_hasta'),
+            'tabla': filas,
+        })
