@@ -56,7 +56,7 @@ export default function Estadisticas() {
 
   return (
     <section>
-      <h2>Estadísticas</h2>
+      <h2>📊Estadísticas</h2>
       <p className="resumen">
         Calculadas por la base de datos y recalculadas con los filtros que elijas.
       </p>
